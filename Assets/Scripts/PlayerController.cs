@@ -1,8 +1,10 @@
 using UnityEngine;
 using TMPro;
+using System.Collections;
 
 public class PlayerController : MonoBehaviour
 {
+    public Animator anim;
     public float speed = 0;
     public float jumpForce = 10f; // Force applied for jumping
     public TextMeshProUGUI countText;
@@ -10,6 +12,7 @@ public class PlayerController : MonoBehaviour
     public AudioClip coinSound;
     public AudioClip winSound;
 
+    private bool isBlinking = false;
     private Rigidbody rb;
     private int count;
     private float movementX;
@@ -19,10 +22,17 @@ public class PlayerController : MonoBehaviour
     // Start is called before the first frame update
     void Start()
     {
+        anim = GetComponent<Animator>();
         rb = GetComponent<Rigidbody>();
         count = 0;
         SetCountText();
         winTextObject.SetActive(false);
+    }
+
+    IEnumerator ResetJumpAnimation()
+    {
+        yield return new WaitForSeconds(0.8f); // Wait for the duration of the jumping animation
+        anim.SetBool("isJumping", false); // Reset the jumping animation parameter
     }
 
     // Update is called once per frame
@@ -34,12 +44,33 @@ public class PlayerController : MonoBehaviour
             // Apply vertical force for jumping
             rb.AddForce(Vector3.up * jumpForce, ForceMode.Impulse);
             isGrounded = false; // Set to false to prevent multiple jumps
-        }
+            anim.SetBool("isJumping", true); //Makes the condition "isJumping" true, hence making all the linked animations run
+            StartCoroutine(ResetJumpAnimation()); // Coroutine to reset jumping animation
+            TriggerBlink(); // Trigger blinking when the player jumps
 
+        }       
         // Get movement input
         movementX = Input.GetAxis("Horizontal");
         movementY = Input.GetAxis("Vertical");
+
+        if (isBlinking) // This is located in the upadte method. Checks private bool isBlinking = false to see if it is true
+        {
+            anim.SetTrigger("isBlinking");
+            isBlinking = false;
+        }
     }
+
+    public void TriggerBlink() // This is a method to trigger the blinking, used by Enemy.cs
+    {
+        isBlinking = true;
+    }
+
+    public void StopBlink() // This method resets the blinking when the player is out of the enemy radius. Also used by Enemy.cs
+    {
+        anim.ResetTrigger("isBlinking");
+    }
+
+
 
     void SetCountText()
     {
